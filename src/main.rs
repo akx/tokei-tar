@@ -8,7 +8,7 @@ use tokei::{Config, LanguageType};
 
 #[derive(Parser)]
 struct Opts {
-    pub tar_filename: String,
+    pub tar_filename: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -23,8 +23,14 @@ struct SummaryEntry {
 
 fn main() {
     let opts: Opts = Opts::parse();
-    let file = File::open(opts.tar_filename).unwrap();
-    let mut a = Archive::new(file);
+    match opts.tar_filename {
+        Some(filename) => process(File::open(filename).expect("Failed to open file")),
+        None => process(std::io::stdin()),
+    };
+}
+
+fn process<R: Read>(reader: R) {
+    let mut a = Archive::new(reader);
     let mut language_stats = BTreeMap::<Option<LanguageType>, SummaryEntry>::new();
     let config = Config::default();
 
