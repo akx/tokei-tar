@@ -34,16 +34,16 @@ fn process<R: Read>(reader: R) {
     let mut language_stats = BTreeMap::<Option<LanguageType>, SummaryEntry>::new();
     let config = Config::default();
 
-    for res in a.entries().unwrap() {
-        let mut f = res.unwrap();
+    for res in a.entries().expect("failed reading tar entry") {
+        let mut f = res.expect("failed reading entry");
         if !f.header().entry_type().is_file() {
             continue;
         }
-        let path = f.header().path().unwrap().to_path_buf();
+        let path = f.header().path().expect("failed to decode filename").to_path_buf();
         match LanguageType::from_path(&path, &config) {
             Some(language) => {
                 let mut s = Vec::new();
-                f.read_to_end(&mut s).unwrap();
+                f.read_to_end(&mut s).expect("failed to read file");
                 let stats = language.parse_from_slice(&s, &config);
                 let entry = language_stats
                     .entry(Some(language))
@@ -74,7 +74,7 @@ fn process<R: Read>(reader: R) {
                         bytes: 0,
                     });
                 entry.files.push(path.to_string_lossy().to_string());
-                entry.bytes += f.header().size().unwrap();
+                entry.bytes += f.header().size().expect("corrupt size field");
             }
         }
     }
